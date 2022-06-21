@@ -1,0 +1,212 @@
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" href="style.css">
+	<title>Krzyżyk i krzyżyk</title>
+</head>
+<script>
+	let wybor = false;
+	let Ri = 0; //indeksy do wstawienia X dla komputera
+	let Rj = 0;
+	let koniec = false; //warunek zakonczenia gry, na razie jest na false 
+	let N = 3; //liczba wierszy i kolumn
+	let T = []; //tablica pusta
+	for (let i = 0; i < N; i++) T[i] = []; //przydzielam wiersze puste
+	for (let i = 0; i < N; i++)
+		for (let j = 0; j < N; j++) T[i][j] = 0; //i tutaj konkretne wartosci, na poczatku zera
+
+	function wstawX(ident) //wstawienie krzyzyka na konkretny przycisk
+	{
+		document.getElementById(ident).value = "X"; //wstawiam X na pole ruchu komputera
+		document.getElementById(ident).disabled = true; //i rowniez zamrazam, zeby nie dalo sie kliknac
+	}
+
+	function wstawP(ident) //usunieci krzyzyka z konkretnego przycisku
+	{
+		document.getElementById(ident).value = " "; //wstawiam spacje na pole kazde pole
+		document.getElementById(ident).disabled = false; //odmrazam przycisk
+	}
+
+	function wyzeruj() //przywrocenie do ustawien poczatkowych
+	{
+		wybor = false;
+		Ri = 0; //indeksy do wstawienia X dla komputera
+		Rj = 0;
+		koniec = false; //warunek zakonczenia gry, na razie jest na false 
+		T = []; //tablica pusta
+		for (let i = 0; i < N; i++) T[i] = []; //przydzielam wiersze puste
+		for (let i = 0; i < N; i++)
+			for (let j = 0; j < N; j++) T[i][j] = 0;
+		for (let i = 0; i < N; i++)
+			for (let j = 0; j < N; j++) wstawP("b" + i + j); //wstawiam puste na przyciski
+
+	}
+
+	function wyborgracz() //wcisniecie przycisku gracz zaczyna
+	{
+		if (!wybor) wybor = !wybor; //zapemietuje, ze nastapil wybor
+	}
+
+	function wyborkomputer() //wybrano przycisk zaczyna komputer
+	{
+		if (!wybor) //jezeli jeszcze nie bylo wyboru 
+		{
+			wybor = !wybor; //uniemozliwiam ponownemu wyborow kto zaczyna
+			gra_komputer(T); //komputer wykonuje pierwszy ruch
+		}
+	}
+
+	//sprawdzenie ile na danej pozycji  ile jest jedynek w wierszu, kolumnie lub na przekatnej, wybieram najmniejsza wartosc  
+	function punktacja(T, ii, jj) {
+		let r = 4; //zakladam ze sa 4, oczywiscie to sie zmieni
+		let s = T[ii][0] + T[ii][1] + T[ii][2]; //suma jedynek w wierszu
+		if (s < r) r = s; //jezeli mniej, to podmieniam
+		s = T[0][jj] + T[1][jj] + T[2][jj]; //suma w kolumnie
+		if (s < r) r = s; //jezeli mniej to podmieniam
+		if (ii == jj) //jezeli indeksy te same
+		{
+			s = s = T[0][0] + T[1][1] + T[2][2]; //suma jedynek w glownej przekatnej
+			if (s < r) r = s; //jezeli mniej to podmieniam
+		}
+		if (ii == 1 && jj == 1) //pole srodkowe
+		{
+			s = s = T[0][2] + T[1][1] + T[2][0]; //sumuje jeszcze jedynki z drugiej przekatnej
+			if (s < r) r = s; //jezeli mniej to podmieniam
+		}
+		if (ii == 0 && jj == 2) //narozniki: prawy gorny lub lewy dolny
+		{
+			s = s = T[0][2] + T[1][1] + T[2][0]; //sumuje jedynki z drugiej przekatnej
+			if (s < r) r = s; //jezeli mniej to podmieniam
+		}
+		if (ii == 2 && jj == 0) {
+			s = s = T[0][2] + T[1][1] + T[2][0];
+			if (s < r) r = s;
+		}
+		return r;
+	}
+
+	function przegrana(T) //sprawdzenie, czy gdziekolwiek sa trzy jednynki
+	{
+		let r = false;
+		for (let i = 0; i < N && !r; i++) {
+			r = (T[i][0] + T[i][1] + T[i][2] == 3); //czy w wierszach
+		}
+		if (!r) {
+			for (let j = 0; j < N && !r; j++) {
+				r = (T[0][j] + T[1][j] + T[2][j] == 3); //w kolumnach
+			}
+			if (!r) {
+				r = (T[0][0] + T[1][1] + T[2][2] == 3); //na przekatnych
+				if (!r) {
+					r = (T[0][2] + T[1][1] + T[2][0] == 3);
+				}
+			}
+		}
+		return r;
+	}
+
+	function ustawRiRj(T) //ustawia indeksy na pierwsze wolne pole
+	{
+		let kon = false; //zmienna sprawdzajaca czy konczyc poszukiwanie
+		for (let i = 0; i < N && !kon; i++) //przegladam tablice az do wyczerpania indeksow lub napotkaniu pola z 0
+			for (let j = 0; j < N && !kon; j++)
+				if (T[i][j] == 0) //jezeli jest pole puste
+		{
+			Ri = i; //zapamietuje jego indeksy
+			Rj = j;
+			kon = true; //zmieniam koniec na true, a tym samym zatrzymuje petle powyzej
+		}
+	}
+
+	function gra_komputer(T) {
+		let p = false; //nie ma przegranej
+		let m = 4;
+		let minik = 4; //minimalna liczba punktow, to sie zmieni na mniejsze
+		ustawRiRj(T); //ustawiam indeksy na pierwszym wolnym polu
+		for (let i = 0; i < N; i++)
+			for (let j = 0; j < N; j++) {
+				if (T[i][j] == 0) //szukam pierwszego wolnego pola poprzez petle wyzej
+				{
+
+					T[i][j] = 1; //ustawiam tymczasowo na 1
+					p = przegrana(T); //sprawdzam czy jest przegrana
+					m = punktacja(T, i, j); //oraz najmniejsza liczba jedynek w wierszu, kolumnie ewentualnie przekatnej
+					if (m < minik && !p) //jezeli punktacja jest mniejsza od minika i nie ma przegranej
+					{ //ten fragment jest algorytmem minimaxa, a wlasciwie mina, bo wybieram najlepszy ruch dla komputera
+						//czyli pole, w ktorym po wstawieniu jest najmniej jedynek i nie ma przegranej
+						minik = m; //aktualizuje minika
+						Ri = i; //zapamietuje, gdzie to bylo
+						Rj = j;
+					}
+					T[i][j] = 0; //przywracam pole do stanu pierwotnego
+				}
+			}
+		T[Ri][Rj] = 1; //tam gdzie byla punktacja najmniejsza wstawiam jedynke (to jest przy ruchu komputera)     
+		wstawX("b" + Ri + Rj);
+	}
+
+	function klik(i, j, ident) //klikniecie na pole o indeksach i,j i identyfikatorze ident
+	{
+		if (wybor) {
+			if (!koniec) //jezeli nie koniec gry
+			{
+				T[i][j] = 1; //zaznaczam w tablicy indeksy na 1
+				wstawX(ident);
+
+				if (przegrana(T)) //jeżeli przegrana
+				{
+					koniec = true; //ustawiam koniec gry na true, zeby dalej nie grac
+					alert("Komputer wygrywa"); //po kliknieciu przez gracza, przeciwnik, czyli komputer wygrywa
+				} //uzytkownik wykonal ruch
+
+				if (!koniec) //jezeli nie koniec gry
+				{
+					gra_komputer(T); //procedura gry komputera	   			
+					if (przegrana(T)) //jezeli na planszy przegrana
+					{
+						koniec = true; //koniec gry
+						alert("Gracz wygrywa"); //wtedy gracz wygrywa
+
+					}
+				}
+			} else alert("Zacznij nową grę.");
+		} else alert("Wybierz najpierw, kto pierwszy gra.");
+	}
+</script>
+<h1>Zagraj z komputerem w krzyżyk i krzyżyk.</h1>
+<h2> Kto pierwszy utworzy rząd 3 krzyżyków - przegrywa </h2>
+<!-- formularz z przyciskami, onclick wywoluje funkcje klik o odpowiednich indeksach i identyfikatorze przycisku -->
+<form name="form1" action="" method="">
+	<input name="bx" type="button" id="bkomp" value="Komputer zaczyna" style="width:150px; height:40px;"
+		title="Komputer zaczyna" onclick='wyborkomputer()'>
+	<input name="by" type="button" id="bgracz" value=" Gracz zaczyna  " style="width:150px; height:40px;"
+		title="Gracz zaczyna" onclick='wyborgracz()'> <br><br>
+	<input name="b1" type="button" id="b00" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("0", "0", "b00")'>
+	<input name="b2" type="button" id="b01" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("0", "1", "b01")'>
+	<input name="b3" type="button" id="b02" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("0", "2", "b02")'> <br>
+	<input name="b4" type="button" id="b10" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("1", "0", "b10")'>
+	<input name="b5" type="button" id="b11" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("1", "1", "b11")'>
+	<input name="b6" type="button" id="b12" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("1", "2", "b12")'> <br>
+	<input name="b7" type="button" id="b20" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("2", "0", "b20")'>
+	<input name="b8" type="button" id="b21" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("2", "1", "b21")'>
+	<input name="b9" type="button" id="b22" value=" " style="width:50px; height:50px;" title="Wybór pola dla X"
+		onclick='klik("2", "2", "b22")'>
+	<br><br>
+	<input name="bz" type="button" id="bnowa" value="Nowa gra" style="width:150px; height:40px;" title="Nowa gra"
+		onclick='wyzeruj()'>
+</form>
+<br>
+
+<h5>Algorytm inspirowany z tej strony w javie, przerobiony do javascript: <a href="https://tutorialedge.net/artificial-intelligence/min-max-algorithm-in-java/">https://tutorialedge.net/artificial-intelligence/min-max-algorithm-in-java/</a></h5>
+</body>
+
+</html>
